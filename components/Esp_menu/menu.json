@@ -1,0 +1,222 @@
+{
+    "display": {
+        "type": "ssd1306",
+        "width": 128,
+        "height": 64,
+        "interface": "i2c",
+        "i2c_address": "0x3C",
+        "sda_pin": 18,
+        "scl_pin": 19
+    },
+    "encoders": [
+        {
+            "name": "encoder1",
+            "pins": {
+                "A": 10,
+                "B": 11,
+                "switch": 12
+            },
+            "role": "navigate_main"
+        },
+        {
+            "name": "encoder2",
+            "pins": {
+                "A": 13,
+                "B": 14,
+                "switch": 15
+            },
+            "role": "adjust_waveform"
+        },
+        {
+            "name": "encoder3",
+            "pins": {
+                "A": 16,
+                "B": 17,
+                "switch": 21
+            },
+            "role": "adjust_level_fine"
+        },
+        {
+            "name": "encoder4",
+            "pins": {
+                "A": 22,
+                "B": 23,
+                "switch": 25
+            },
+            "role": "adjust_pw_ampmod"
+        }
+    ],
+    "graphics": [
+        {
+            "id": "waveform_icon",
+            "type": "external",
+            "header": "user_graphic.h",
+            "symbol": "waveform_icon"
+        }
+    ],
+    "menu": {
+        "screens": [
+            {
+                "name": "main",
+                "widgets": [
+                    {
+                        "type": "list",
+                        "items": [
+                            {
+                                "text": "Pitch Up",
+                                "action": "pitch_up"
+                            },
+                            {
+                                "text": "Pitch Down",
+                                "action": "pitch_down"
+                            },
+                            {
+                                "text": "Waveform",
+                                "screen": "waveform"
+                            },
+                            {
+                                "text": "Level/Fine",
+                                "screen": "level_fine"
+                            },
+                            {
+                                "text": "Pulse Width/AmpMod",
+                                "screen": "pw_ampmod"
+                            },
+                            {
+                                "text": "Favorites",
+                                "screen": "favorites"
+                            }
+                        ],
+                        "controlled_by": "encoder1"
+                    },
+                    {
+                        "type": "image",
+                        "graphic_id": "waveform_icon",
+                        "x": 100,
+                        "y": 0
+                    }
+                ]
+            },
+            {
+                "name": "waveform",
+                "widgets": [
+                    {
+                        "type": "list",
+                        "items": [
+                            {
+                                "text": "Next Waveform",
+                                "action": "waveform_next"
+                            },
+                            {
+                                "text": "Previous Waveform",
+                                "action": "waveform_prev"
+                            },
+                            {
+                                "text": "Back",
+                                "screen": "main"
+                            }
+                        ],
+                        "controlled_by": "encoder2"
+                    }
+                ]
+            },
+            {
+                "name": "level_fine",
+                "widgets": [
+                    {
+                        "type": "list",
+                        "items": [
+                            {
+                                "text": "Level Up",
+                                "action": "level_up"
+                            },
+                            {
+                                "text": "Level Down",
+                                "action": "level_down"
+                            },
+                            {
+                                "text": "Fine Tune Up",
+                                "action": "fine_tune_up"
+                            },
+                            {
+                                "text": "Fine Tune Down",
+                                "action": "fine_tune_down"
+                            },
+                            {
+                                "text": "Back",
+                                "screen": "main"
+                            }
+                        ],
+                        "controlled_by": "encoder3"
+                    }
+                ]
+            },
+            {
+                "name": "pw_ampmod",
+                "widgets": [
+                    {
+                        "type": "list",
+                        "items": [
+                            {
+                                "text": "Pulse Width Up",
+                                "action": "pulse_width_up"
+                            },
+                            {
+                                "text": "Pulse Width Down",
+                                "action": "pulse_width_down"
+                            },
+                            {
+                                "text": "Amp Mod Slot Next",
+                                "action": "amp_mod_slot_next"
+                            },
+                            {
+                                "text": "Amp Mod Slot Prev",
+                                "action": "amp_mod_slot_prev"
+                            },
+                            {
+                                "text": "Back",
+                                "screen": "main"
+                            }
+                        ],
+                        "controlled_by": "encoder4"
+                    }
+                ]
+            },
+            {
+                "name": "favorites",
+                "widgets": [
+                    {
+                        "type": "list",
+                        "items": [
+                            {
+                                "text": "Next Slot",
+                                "action": "select_favorite_slot_next"
+                            },
+                            {
+                                "text": "Previous Slot",
+                                "action": "select_favorite_slot_prev"
+                            },
+                            {
+                                "text": "Save Favorite",
+                                "action": "save_favorite_action"
+                            },
+                            {
+                                "text": "Load Favorite",
+                                "action": "load_favorite_action"
+                            },
+                            {
+                                "text": "Clear Favorite",
+                                "action": "clear_favorite_action"
+                            },
+                            {
+                                "text": "Back",
+                                "screen": "main"
+                            }
+                        ],
+                        "controlled_by": "encoder1"
+                    }
+                ]
+            }
+        ]
+    }
+}
