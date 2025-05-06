@@ -64,9 +64,9 @@ static void event_handler(lv_event_t *e) {
         
         
         
-        /* DEBUG: Widget type=image, items=<built-in method items of dict object at 0x7f9b5db480> */
+        /* DEBUG: Widget type=image, items=<built-in method items of dict object at 0x7fa8c2b780> */
         
-        /* DEBUG: Skipped widget type=image, items=<built-in method items of dict object at 0x7f9b5db480> */
+        /* DEBUG: Skipped widget type=image, items=<built-in method items of dict object at 0x7fa8c2b780> */
         
         
         
@@ -310,7 +310,7 @@ void menu_init(void) {
     lv_indev_set_group(indev_encoder1, group_encoder1);
     
     
-    /* DEBUG: Widget type=image, items=<built-in method items of dict object at 0x7f9b5db480> */
+    /* DEBUG: Widget type=image, items=<built-in method items of dict object at 0x7fa8c2b780> */
     
     lv_obj_t *img_main_2 = lv_image_create(scr_main);
     lv_image_set_src(img_main_2, &waveform_icon_dsc);

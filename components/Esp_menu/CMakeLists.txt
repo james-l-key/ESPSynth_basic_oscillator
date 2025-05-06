@@ -51,13 +51,13 @@ endif()
 
 # Include generated files
 set(srcs
-    "Esp_menu.c"
-    "user_actions.c"
-    "generated/menu.c"
+    "./Esp_menu.c"
+    "./user_actions.c"
+    "./generated/menu.c"
 )
 
 idf_component_register(
     SRCS "${srcs}"
-    INCLUDE_DIRS "." "include" "generated" "${CMAKE_BINARY_DIR}/esp-idf/Esp_menu"
+    INCLUDE_DIRS "." "./include" "./generated" "${CMAKE_BINARY_DIR}/esp-idf/Esp_menu"
     PRIV_REQUIRES lvgl esp_lvgl_port espressif__knob espressif__button
 )

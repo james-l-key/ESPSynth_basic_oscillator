@@ -1,20 +1,15 @@
 set(srcs
     "main.c"
     "waveform_gen.c"
-    "user_actions.c"
-    "components/module_i2c_proto/module_i2c_proto.c"
-    "components/Esp_menu/Esp_menu.c"
-    "components/Esp_menu/generated/menu.c"
 )
 idf_component_register(
     SRCS "${srcs}"
     INCLUDE_DIRS
         "."
-        "components/common_definitions/include"
-        "components/module_i2c_proto/include"
-        "components/Esp_menu/include"
-        "components/Esp_menu/generated"
-        "${CMAKE_BINARY_DIR}/esp-idf/Esp_menu"
+    REQUIRES
+        Esp_menu
+        module_i2c_proto
+        common_definitions
     PRIV_REQUIRES
         lvgl
         esp_lvgl_port
