@@ -19,9 +19,9 @@ This module acts as a digital sound source, generating classic waveforms. It lis
 
 * **MCU:** ESP32-S3 (Tested on DevKitC-1 N8R2 and N32R8V variants).
 * **Connections:**
-    * Backplane connector for Power, Ground, Main I2C (SDA/SCL), I2S TDM (MCLK, BCLK, WS input; SD_OUT output).
-    * (Optional) Local I2C connector for SSD1306 Display.
-    * (Optional) GPIO connections for Rotary Encoder(s).
+  * Backplane connector for Power, Ground, Main I2C (SDA/SCL), I2S TDM (MCLK, BCLK, WS input; SD_OUT output).
+  * (Optional) Local I2C connector for SSD1306 Display.
+  * (Optional) GPIO connections for Rotary Encoder(s).
 
 ## Dependencies
 
@@ -43,12 +43,12 @@ Project-specific settings can be configured via `idf.py menuconfig`, including:
 
 ## Building & Flashing
 
-1.  Ensure ESP-IDF environment is set up correctly for the target version.
-2.  Navigate to this firmware directory (`firmware/basic_oscillator/` or similar).
-3.  Set target: `idf.py set-target esp32s3`
-4.  Configure: `idf.py menuconfig` (optional)
-5.  Build: `idf.py build`
-6.  Flash: `idf.py -p /dev/ttyUSB0 flash monitor` (replace `/dev/ttyUSB0` with your serial port).
+1. Ensure ESP-IDF environment is set up correctly for the target version.
+2. Navigate to this firmware directory (`firmware/basic_oscillator/` or similar).
+3. Set target: `idf.py set-target esp32s3`
+4. Configure: `idf.py menuconfig` (optional)
+5. Build: `idf.py build`
+6. Flash: `idf.py -p /dev/ttyUSB0 flash monitor` (replace `/dev/ttyUSB0` with your serial port).
 
 ## I2C Interface Summary
 
@@ -60,11 +60,11 @@ This module responds to various commands defined in `module_i2c_proto`, includin
 * `CMD_COMMON_RESET`
 * `REG_COMMON_I2S_CONFIG`
 * `REG_COMMON_SET_PARAM` for parameters like:
-    * `PARAM_OSC_WAVEFORM`
-    * `PARAM_OSC_PITCH_MIDI` / `PARAM_OSC_PITCH_FIXED_HZ`
-    * `PARAM_OSC_LEVEL_U16`
-    * `PARAM_OSC_PW_U16`
-    * *(Add other relevant parameters this module implements)*
+  * `PARAM_OSC_WAVEFORM`
+  * `PARAM_OSC_PITCH_MIDI` / `PARAM_OSC_PITCH_FIXED_HZ`
+  * `PARAM_OSC_LEVEL_U16`
+  * `PARAM_OSC_PW_U16`
+  * *(Add other relevant parameters this module implements)*
 
 *(Refer to the `module_i2c_proto` documentation/repository for the complete protocol definition.)*
 

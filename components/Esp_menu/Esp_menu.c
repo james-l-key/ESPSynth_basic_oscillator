@@ -1,175 +1,182 @@
 /**
  * @file Esp_menu.c
- * @brief Implementation file for the ESP Menu system.
- *
- * This file contains the core logic for initializing and managing the menu system,
- * including hardware setup (LCD display, I2C, GPIO for encoder/buttons) and
- * integration with the LVGL library for the user interface.
+ * @brief Implementation of the ESP Menu component for initializing the menu system with SSD1306 display and rotary encoders.
  */
 
-#include "Esp_menu.h"  // Public interface for the menu system
-#include "menu_data.h" // Auto-generated menu structure data
+#include "Esp_menu.h"
+#include "menu_data.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_timer.h"
 #include "driver/i2c_master.h"
-#include "sdkconfig.h" // Generated configuration header (Kconfig)
+#include "sdkconfig.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lvgl_port.h"
-#include "esp_lcd_panel_vendor.h" // Specific LCD vendor drivers (like SSD1306)
+#include "esp_lcd_panel_vendor.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
-#include "button_gpio.h" // GPIO button component
-#include "iot_button.h"  // Abstracted button component
-#include "knob_gpio.h"   // GPIO knob (encoder) component
-#include "iot_knob.h"    // Abstracted knob (encoder) component
+#include "iot_button.h"
+#include "iot_knob.h"
 
-/** @brief Logging tag for the Esp_menu component. */
+/** @brief Logging tag for ESP Menu component. */
 #define TAG "Esp_menu"
 
-/**
- * @brief Error checking macro specific to this component.
- */
-#define BSP_ERROR_CHECK_RETURN_NULL(x)                                               \
+/** @brief Macro to check ESP error codes and return on failure with logging. */
+#define BSP_ERROR_CHECK_RETURN_ERR(x)                                                \
     do                                                                               \
     {                                                                                \
         esp_err_t err_rc = (x);                                                      \
         if (err_rc != ESP_OK)                                                        \
         {                                                                            \
             ESP_LOGE(TAG, "Error %s at line %d", esp_err_to_name(err_rc), __LINE__); \
-            return NULL;                                                             \
+            return err_rc;                                                           \
         }                                                                            \
     } while (0)
 
-#ifdef UNIT_TEST
-#include "test_config.h"
-#endif
-
-/** @brief Global handle for the initialized LCD panel. */
-esp_lcd_panel_handle_t lcd_handle = NULL;
+/** @brief Handle for the LCD panel. */
+static esp_lcd_panel_handle_t lcd_handle = NULL;
 
 /**
- * @brief Main application entry point.
+ * @brief Initializes the ESP Menu system, including I2C, SSD1306 display, rotary encoders, and LVGL.
+ * @return esp_err_t ESP_OK on success, or an error code on failure.
  */
-void app_main(void)
+esp_err_t esp_menu_init(void)
 {
     ESP_LOGI(TAG, "Starting menu system initialization");
 
-    // Initialize I2C bus
+    // Initialize I2C master bus for SSD1306
     i2c_master_bus_handle_t i2c_bus = NULL;
     i2c_master_bus_config_t bus_config = {
         .clk_source = I2C_CLK_SRC_DEFAULT,
         .glitch_ignore_cnt = 7,
-        .i2c_port = CONFIG_ESPMENU_I2C_HOST,
+        .i2c_port = I2C_NUM_1,
         .sda_io_num = CONFIG_ESPMENU_SSD1306_I2C_SDA,
         .scl_io_num = CONFIG_ESPMENU_SSD1306_I2C_SCL,
         .flags.enable_internal_pullup = true,
     };
-    ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, &i2c_bus));
+    BSP_ERROR_CHECK_RETURN_ERR(i2c_new_master_bus(&bus_config, &i2c_bus));
 
-    // Initialize LCD panel IO (SSD1306)
+    // Initialize LCD panel I/O
     esp_lcd_panel_io_handle_t io_handle = NULL;
     esp_lcd_panel_io_i2c_config_t io_config = {
-        .dev_addr = CONFIG_ESPMENU_SSD1306_I2C_ADDRESS,
+        .dev_addr = 0x3C,
         .control_phase_bytes = 1,
         .lcd_cmd_bits = 8,
         .lcd_param_bits = 8,
         .dc_bit_offset = 6};
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c((esp_lcd_i2c_bus_handle_t)i2c_bus, &io_config, &io_handle));
+    BSP_ERROR_CHECK_RETURN_ERR(esp_lcd_new_panel_io_i2c((esp_lcd_i2c_bus_handle_t)i2c_bus, &io_config, &io_handle));
 
-    // Initialize LCD panel driver (SSD1306)
+    // Initialize SSD1306 panel
     esp_lcd_panel_handle_t panel_handle = NULL;
     esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = -1,
-        .flags = {
-            .reset_active_high = 0,
-        },
-    };
-    ESP_ERROR_CHECK(esp_lcd_new_panel_ssd1306(io_handle, &panel_config, &panel_handle));
-    ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
-    ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
+        .bits_per_pixel = 1};
+    BSP_ERROR_CHECK_RETURN_ERR(esp_lcd_new_panel_ssd1306(io_handle, &panel_config, &panel_handle));
+    BSP_ERROR_CHECK_RETURN_ERR(esp_lcd_panel_reset(panel_handle));
+    BSP_ERROR_CHECK_RETURN_ERR(esp_lcd_panel_init(panel_handle));
     lcd_handle = panel_handle;
 
-    // Configure GPIO for Rotary Encoder
+    // Configure GPIO for rotary encoders
     gpio_config_t io_conf = {
         .intr_type = GPIO_INTR_ANYEDGE,
         .mode = GPIO_MODE_INPUT,
-        .pin_bit_mask = (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_1_A) |
-                        (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_1_B) |
-                        (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_1_BUTTON),
+        .pin_bit_mask =
+            (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_1_A) |
+            (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_1_B) |
+            (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_1_BUTTON) |
+            (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_2_A) |
+            (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_2_B) |
+            (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_2_BUTTON) |
+            (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_3_A) |
+            (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_3_B) |
+            (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_3_BUTTON) |
+            (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_4_A) |
+            (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_4_B) |
+            (1ULL << CONFIG_ESPMENU_ROTARY_ENCODER_4_BUTTON),
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
         .pull_up_en = GPIO_PULLUP_ENABLE};
-    gpio_config(&io_conf);
+    BSP_ERROR_CHECK_RETURN_ERR(gpio_config(&io_conf));
 
-    // Initialize Navigation Buttons
-    button_handle_t prev_btn_handle = NULL;
-    button_handle_t next_btn_handle = NULL;
-    button_handle_t enter_btn_handle = NULL;
+    // Initialize rotary encoders and buttons
+    button_handle_t encoder_btn_handles[4] = {NULL};
+    knob_handle_t encoder_knob_handles[4] = {NULL};
     button_config_t btn_cfg = {
         .type = BUTTON_TYPE_GPIO,
-    };
-    button_gpio_config_t bsp_button_config[] = {
-        {.gpio_num = GPIO_NUM_37, .active_level = 0},
-        {.gpio_num = GPIO_NUM_38, .active_level = 0},
-        {.gpio_num = GPIO_NUM_39, .active_level = 0},
-    };
-    ESP_ERROR_CHECK(iot_button_new_gpio(&btn_cfg, &bsp_button_config[0], &prev_btn_handle));
-    ESP_ERROR_CHECK(iot_button_new_gpio(&btn_cfg, &bsp_button_config[1], &next_btn_handle));
-    ESP_ERROR_CHECK(iot_button_new_gpio(&btn_cfg, &bsp_button_config[2], &enter_btn_handle));
-
-    // Add Navigation Buttons to LVGL
-    lv_disp_t *disp_handle = lvgl_port_get_default_display();
-    if (!disp_handle)
+        .gpio_button_config = {
+            .gpio_num = 0,
+            .active_level = 0}};
+    knob_config_t knob_cfg = {
+        .default_direction = 0,
+        .gpio_encoder_a = 0,
+        .gpio_encoder_b = 0};
+    const int encoder_pins[4][3] = {
+        {CONFIG_ESPMENU_ROTARY_ENCODER_1_A, CONFIG_ESPMENU_ROTARY_ENCODER_1_B, CONFIG_ESPMENU_ROTARY_ENCODER_1_BUTTON},
+        {CONFIG_ESPMENU_ROTARY_ENCODER_2_A, CONFIG_ESPMENU_ROTARY_ENCODER_2_B, CONFIG_ESPMENU_ROTARY_ENCODER_2_BUTTON},
+        {CONFIG_ESPMENU_ROTARY_ENCODER_3_A, CONFIG_ESPMENU_ROTARY_ENCODER_3_B, CONFIG_ESPMENU_ROTARY_ENCODER_3_BUTTON},
+        {CONFIG_ESPMENU_ROTARY_ENCODER_4_A, CONFIG_ESPMENU_ROTARY_ENCODER_4_B, CONFIG_ESPMENU_ROTARY_ENCODER_4_BUTTON}};
+    for (int i = 0; i < 4; i++)
     {
-        ESP_LOGE(TAG, "LVGL Display not initialized!");
-        return;
-    }
-    lvgl_port_nav_btns_cfg_t btns = {
-        .disp = disp_handle,
-        .button_prev = prev_btn_handle,
-        .button_next = next_btn_handle,
-        .button_enter = enter_btn_handle};
-    lv_indev_t *buttons_indev = lvgl_port_add_navigation_buttons(&btns);
-    if (!buttons_indev)
-    {
-        ESP_LOGE(TAG, "Failed to add navigation buttons to LVGL");
-        return;
+        btn_cfg.gpio_button_config.gpio_num = encoder_pins[i][2];
+        BSP_ERROR_CHECK_RETURN_ERR(iot_button_create(&btn_cfg, &encoder_btn_handles[i]));
+        knob_cfg.gpio_encoder_a = encoder_pins[i][0];
+        knob_cfg.gpio_encoder_b = encoder_pins[i][1];
+        BSP_ERROR_CHECK_RETURN_ERR(iot_knob_create(&knob_cfg, &encoder_knob_handles[i]));
     }
 
-    // Initialize Rotary Encoder
-    button_handle_t encoder_btn_handle = NULL;
-    knob_handle_t encoder_knob_handle = NULL;
-    button_gpio_config_t encoder_btn_config = {
-        .gpio_num = CONFIG_ESPMENU_ROTARY_ENCODER_1_BUTTON,
-        .active_level = 0,
-    };
-    ESP_ERROR_CHECK(iot_button_new_gpio(&btn_cfg, &encoder_btn_config, &encoder_btn_handle));
-    knob_config_t encoder_knob_cfg = {
-        .type = KNOB_TYPE_GPIO,
-        .num_positions = 0,
-        .gpio_encoder_a = CONFIG_ESPMENU_ROTARY_ENCODER_1_A,
-        .gpio_encoder_b = CONFIG_ESPMENU_ROTARY_ENCODER_1_B,
-    };
-    ESP_ERROR_CHECK(iot_knob_new_gpio(&encoder_knob_cfg, &encoder_knob_handle));
+    // Initialize LVGL
+    lvgl_port_cfg_t lvgl_cfg = {
+        .task_priority = 5,
+        .task_stack = 4096,
+        .task_affinity = -1,
+        .task_max_sleep_ms = 500,
+        .timer_period_ms = 5};
+    BSP_ERROR_CHECK_RETURN_ERR(lvgl_port_init(&lvgl_cfg));
 
-    // Add Rotary Encoder to LVGL
-    lvgl_port_encoder_cfg_t encoder_lvgl_cfg = {
-        .disp = disp_handle,
-        .encoder_enter = encoder_btn_handle,
-        .encoder_a = encoder_knob_handle,
-        .encoder_b = NULL};
-    lv_indev_t *encoder_indev = lvgl_port_add_encoder(&encoder_lvgl_cfg);
-    if (!encoder_indev)
+    // Add display to LVGL
+    lvgl_port_display_cfg_t disp_cfg = {
+        .io_handle = io_handle,
+        .panel_handle = panel_handle,
+        .buffer_size = 128 * 64,
+        .double_buffer = true,
+        .hres = 128,
+        .vres = 64,
+        .monochrome = true,
+        .rotation = {
+            .swap_xy = false,
+            .mirror_x = false,
+            .mirror_y = false}};
+    lv_disp_t *disp = lvgl_port_add_disp(&disp_cfg);
+    if (!disp)
     {
-        ESP_LOGE(TAG, "Failed to add encoder to LVGL");
-        return;
+        ESP_LOGE(TAG, "Failed to add display to LVGL");
+        return ESP_FAIL;
     }
 
-    // Call the generated menu_init to set up LVGL widgets
+    // Add encoders to LVGL
+    const char *encoder_names[4] = {"encoder1", "encoder2", "encoder3", "encoder4"};
+    for (int i = 0; i < 4; i++)
+    {
+        lvgl_port_encoder_cfg_t encoder_cfg = {
+            .disp = disp,
+            .encoder_a_b = encoder_knob_handles[i],
+            .encoder_enter = encoder_btn_handles[i]};
+        lv_indev_t *indev = lvgl_port_add_encoder(&encoder_cfg);
+        if (!indev)
+        {
+            ESP_LOGE(TAG, "Failed to add encoder %d to LVGL", i + 1);
+            return ESP_FAIL;
+        }
+        lv_group_t *group = lv_group_create();
+        lv_indev_set_group(indev, group);
+        lv_obj_set_user_data(indev, (void *)encoder_names[i]);
+    }
+
+    // Initialize menu widgets
     ESP_LOGI(TAG, "Initializing LVGL menu widgets");
-    menu_init(); // From menu.c
+    menu_init();
 
     ESP_LOGI(TAG, "Menu system fully initialized");
+    return ESP_OK;
 }

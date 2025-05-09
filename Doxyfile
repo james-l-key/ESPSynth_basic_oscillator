@@ -1,0 +1,55 @@
+# Doxyfile for ESPSynth_basic_oscillator
+
+# Project information
+PROJECT_NAME           = "ESPSynth Basic Oscillator Module"
+PROJECT_NUMBER         = 0.1
+PROJECT_BRIEF          = "A digital oscillator module for the ESP32-based modular synthesizer system"
+OUTPUT_DIRECTORY       = ./docs
+
+# Input files
+INPUT                  = ./main ./components
+FILE_PATTERNS          = *.c *.h *.cpp *.hpp
+RECURSIVE              = YES
+EXCLUDE                = ./build
+
+# Output options
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+HTML_OUTPUT            = html
+HTML_FILE_EXTENSION    = .html
+
+# Diagrams and graphs
+HAVE_DOT               = YES
+UML_LOOK               = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+
+# Advanced options
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+ENABLED_SECTIONS       = 
+MAX_INITIALIZER_LINES  = 30
+SHOW_USED_FILES        = YES
+SHOW_FILES             = YES
+SHOW_NAMESPACES        = YES
+
+# Preprocessing
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+PREDEFINED             = CONFIG_ESPMENU_ENABLE_NVS
+
+# Message options
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+
+# Source browsing
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = YES
+STRIP_CODE_COMMENTS    = NO
+
+# External references
+GENERATE_TAGFILE       = ESPSynth_basic_oscillator.tag

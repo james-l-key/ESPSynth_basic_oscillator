@@ -5,6 +5,12 @@ menu "Esp_Menu Configuration"
         default y
         help
             Enable Esp_Menu component
+            
+    config ESPMENU_ENABLE_NVS
+        bool "Enable NVS support for Esp_menu"
+        default y
+        help
+            Enable NVS for saving menu parameters and favorite slots.
     
     config ESPMENU_I2C_HOST
         int "I2C Host"
